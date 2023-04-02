@@ -7,28 +7,46 @@ page_access_token = "EAAQ21oqZBN4kBADPeNCQ6puvvdaybFjbllKlEh0uJvbAKWWgE07Su5YPYV
 v = "v15.0"
 page_id = "109581428764257"
 
+def split_string(input_string):
+    max_chars = 2000
+    output_list = []
+    current_string = ""
+    words = input_string.split()
+    for word in words:
+        if len(current_string + " " + word) <= max_chars:
+            current_string += " " + word
+        else:
+            output_list.append(current_string.strip())
+            current_string = word
+    if current_string:
+        output_list.append(current_string.strip())
+    return output_list
 
-
-async def typing(recipient_id, type: bool):
+async def send_event(recipient_id, type):
     async with aiohttp.ClientSession() as session:
         url = f'https://graph.facebook.com/{v}/{page_id}/messages?access_token={page_access_token}'
         payload = {
                 "recipient": {"id": recipient_id},
-                "sender_action": "typing_on" if type is True else "typing_off"
+                "sender_action": type
             }
-        async with session.post(url, json=payload) as response:
-            data = await response.json()
+        async with session.post(url, json=payload, raise_for_status=True) as response:
+            pass
 
 async def send_message(recipient_id, message_text):
-    async with aiohttp.ClientSession() as session:
-        url = f'https://graph.facebook.com/{v}/{page_id}/messages?access_token={page_access_token}'
-        payload = {
-            "recipient": {"id": recipient_id},
-            "messaging_type": "RESPONSE",
-            "message": {"text": message_text},
-        }
-        async with session.post(url, json=payload) as response:
-            data = await response.json()
+    if len(message_text) <= 2000:
+        async with aiohttp.ClientSession() as session:
+            url = f'https://graph.facebook.com/{v}/{page_id}/messages?access_token={page_access_token}'
+            payload = {
+                "recipient": {"id": recipient_id},
+                "messaging_type": "RESPONSE",
+                "message": {"text": message_text},
+            }
+            async with session.post(url, json=payload, raise_for_status=True) as response:
+                pass
+    else:
+        out = split_string(message_text)
+        for i in out:
+            await send_message(recipient_id, i)
 
 async def get_message(message_id):
     async with aiohttp.ClientSession() as session:
@@ -73,10 +91,25 @@ routes = web.RouteTableDef()
 gpt = ChatGPT()
 
 async def mes_proseing(message_event):
-    await typing(message_event["sender"]["id"], True)
-    datamess = await send_message_hr(message_event["sender"]["id"])
-    gptreturn = await gpt.create_new_chat(datamess)
-    await send_message(message_event["sender"]["id"], gptreturn)
+    await send_event(message_event["sender"]["id"], "MARK_SEEN")
+    isdone = False
+    
+    async def make_typing_effect():
+        while True:
+            if not isdone:
+                await send_event(message_event["sender"]["id"], "TYPING_ON")
+                await asyncio.sleep(4)
+            else:
+                break
+    try:
+        asyncio.create_task(make_typing_effect())
+        datamess = await send_message_hr(message_event["sender"]["id"])
+        gptreturn = await gpt.create_new_chat(datamess)
+        isdone = True
+        await send_message(message_event["sender"]["id"], gptreturn)
+    except BaseException:
+        isdone = True
+        await send_message(message_event["sender"]["id"], "Oh no we got some error please try again 😅")
 
 @routes.view("/wehhook")
 async def webhook(request: web.Request):

@@ -31,7 +31,7 @@ class ChatGPT:
         return "Bearer " + random.choice(self.tokenlist)  # nosec
 
     async def create_new_chat(self, data):
-        messlist = [{"role": "system", "content": "Your name is FantasyBot and made by Fantasy Team and team website at http://fantasybot.tech/ and AI output must below 4000 characters."}]
+        messlist = [{"role": "system", "content": "Your name is FantasyBot and made by Fantasy Team and team website at http://fantasybot.tech/ and Your output must below 2000 characters."}]
         messlist.extend(data)
         headers = headers_real.copy()
         headers["Authorization"] = await self.authenticate()
