@@ -1,4 +1,5 @@
 import asyncio
+import traceback
 import aiohttp
 from aiohttp import web
 from chatgpt import ChatGPT
@@ -57,11 +58,12 @@ async def get_message(message_id):
         }
         async with session.get(url, params=params) as response:
             data = await response.json()
-            if data["from"]["id"] == page_id:
-                role = "assistant"
-            else:
-                role = "user"
-            return {"role": role, "content": data["message"]}
+            if data.get("message"):
+                if data["from"]["id"] == page_id:
+                    role = "assistant"
+                else:
+                    role = "user"
+                return {"role": role, "content": data["message"]}
 
 async def get_conversation_messages(conversation_id):
     async with aiohttp.ClientSession() as session:
@@ -84,6 +86,7 @@ async def send_message_hr(uid):
     if out:
         out.reverse()
         out = await asyncio.gather(*[get_message(i["id"]) for i in out])
+        out = [i for i in out if i is not None]
         return out
 
 app = web.Application()
@@ -108,6 +111,7 @@ async def mes_proseing(message_event):
         isdone = True
         await send_message(message_event["sender"]["id"], gptreturn)
     except BaseException:
+        traceback.print_exc()
         isdone = True
         await send_message(message_event["sender"]["id"], "Oh no we got some error please try again 😅")
     await send_event(message_event["sender"]["id"], "MARK_SEEN")
