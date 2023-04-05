@@ -92,4 +92,41 @@ gpt = ChatGPT()
 
 async def mes_proseing(message_event):
     await send_event(message_event["sender"]["id"], "MARK_SEEN")
-    isdone = False
+    isdone = False
+    
+    async def make_typing_effect():
+        while True:
+            if not isdone:
+                await send_event(message_event["sender"]["id"], "TYPING_ON")
+                await asyncio.sleep(4)
+            else:
+                break
+    try:
+        asyncio.create_task(make_typing_effect())
+        datamess = await send_message_hr(message_event["sender"]["id"])
+        gptreturn = await gpt.create_new_chat(datamess)
+        isdone = True
+        await send_message(message_event["sender"]["id"], gptreturn)
+    except BaseException:
+        isdone = True
+        await send_message(message_event["sender"]["id"], "Oh no we got some error please try again 😅")
+    await send_event(message_event["sender"]["id"], "MARK_SEEN")
+
+@routes.view("/wehhook")
+async def webhook(request: web.Request):
+    if request.method == 'GET':
+        verification_token = 'b6e052b2633147628a4c5df2090fa8bd'
+        verify_string = request.query['hub.verify_token']
+        if verify_string == verification_token:
+            challenge = request.query['hub.challenge']
+            return web.Response(status=200, body=challenge)
+    elif request.method == 'POST':
+        data = await request.json()
+        for entry in data['entry']:
+            for message_event in entry['messaging']:
+                asyncio.create_task(mes_proseing(message_event))
+        return web.Response(status=200)
+    return web.Response(status=404)
+
+app.add_routes(routes)
+web.run_app(app, port=4000)
