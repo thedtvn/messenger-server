@@ -18,14 +18,7 @@ class ChatGPT:
     SSL_Mode = None
 
     def __init__(self):
-        self.tokenlist = ["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",
-                          "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",
-                          "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",
-                          "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",
-                          "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",
-                          "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",
-                          "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",
-                          "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"]
+        self.tokenlist = ["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"]
 
     async def authenticate(self):
         return "Bearer " + random.choice(self.tokenlist)  # nosec
