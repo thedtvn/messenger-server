@@ -1,4 +1,5 @@
 import asyncio
+import textwrap
 import traceback
 import aiohttp
 from aiohttp import web
@@ -10,18 +11,7 @@ page_id = "109581428764257"
 
 def split_string(input_string):
     max_chars = 2000
-    output_list = []
-    current_string = ""
-    words = input_string.splitlines()
-    for word in words:
-        if len(current_string + " \n" + word) <= max_chars:
-            current_string += "\n " + word
-        else:
-            output_list.append(current_string)
-            current_string = word
-    if current_string:
-        output_list.append(current_string)
-    return output_list
+    return textwrap.wrap(input_string, width=max_chars)
 
 async def send_event(recipient_id, type):
     async with aiohttp.ClientSession() as session:
