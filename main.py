@@ -96,8 +96,7 @@ async def mes_proseing(message_event):
                 break
     try:
         asyncio.create_task(make_typing_effect())
-        datamess = await send_message_hr(message_event["sender"]["id"])
-        gptreturn = await gpt.create_new_chat(datamess)
+        gptreturn = await gpt.create_new_chat(message_event["message"]["text"])
         isdone = True
         await send_message(message_event["sender"]["id"], gptreturn)
     except BaseException:
