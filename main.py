@@ -105,6 +105,12 @@ async def mes_proseing(message_event):
         await send_message(message_event["sender"]["id"], "Oh no we got some error please try again 😅")
     await send_event(message_event["sender"]["id"], "MARK_SEEN")
 
+@routes.view("/")
+async def main(request: web.Request):
+    print(request.headers)
+    return web.HTTPOk()
+    
+
 @routes.view("/wehhook")
 async def webhook(request: web.Request):
     if request.method == 'GET':
